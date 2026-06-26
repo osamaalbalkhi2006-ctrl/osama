@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الاتصال بـ Supabase</title>
+    <!-- استيراد مكتبة Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+        }
+        .container {
+            background: #161b22;
+            padding: 35px;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #58a6ff;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 15px;
+        }
+        .status-box {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-right: 4px solid #58a6ff;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-right-color: #2ea043;
+        }
+        .error {
+            border-right-color: #f85149;
+        }
+        .loading {
+            border-right-color: #d29922;
+        }
+        .info-text {
+            color: #8b949e;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .badge {
+            display: inline-block;
+            background: #21262d;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+            color: #58a6ff;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 15px;
+            width: 100%;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th {
+            background: #21262d;
+            color: #58a6ff;
+            padding: 10px;
+            text-align: right;
+            border-bottom: 2px solid #30363d;
+        }
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #21262d;
+        }
+        tr:hover {
+            background: #161b22;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #8b949e;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔌 اختبار الاتصال بـ Supabase</h1>
+        <p class="info-text">الهدف: التحقق من أن الموقع يستطيع قراءة البيانات من قاعدة البيانات.</p>
+
+        <!-- زر لبدء الاختبار -->
+        <button id="testBtn">🚀 اختبر الاتصال الآن</button>
+
+        <!-- منطقة عرض النتائج -->
+        <div id="resultArea">
+            <p class="info-text" style="margin-top:20px;">⏳ اضغط على الزر لبدء الاختبار...</p>
+        </div>
+
+        <div class="footer">
+            <span class="badge">Project: worldcup2026</span>
+            <span class="badge" style="margin-right:8px;">🔑 anon key</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  🔥 بيانات Supabase الخاصة بك
+        // ==========================================
+        const SUPABASE_URL = 'https://azjvyntnnertgcmvsfmq.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_FQT6pUUgos4vOgeAqjdQng_stG_DiAi';
+
+        // ==========================================
+        //  تهيئة العميل
+        // ==========================================
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ==========================================
+        //  عناصر الصفحة
+        // ==========================================
+        const resultArea = document.getElementById('resultArea');
+        const testBtn = document.getElementById('testBtn');
+
+        // ==========================================
+        //  وظيفة الاختبار الرئيسية
+        // ==========================================
+        async function runTest() {
+            // 1. تغيير مظهر الزر أثناء التحميل
+            testBtn.disabled = true;
+            testBtn.textContent = '⏳ جاري الاتصال...';
+            resultArea.innerHTML = `<div class="status-box loading">⏳ جاري الاتصال بقاعدة البيانات...</div>`;
+
+            try {
+                // ==========================================
+                //  الاختبار 1: محاولة قراءة جدول "users"
+                // ==========================================
+                const { data: usersData, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .limit(5); // نجلب فقط 5 سجلات
+
+                if (usersError) {
+                    // إذا كان الجدول غير موجود، نحاول قراءة جدول "matches"
+                    if (usersError.message.includes('relation "users" does not exist')) {
+                        resultArea.innerHTML += `
+                            <div class="status-box error">
+                                ❌ جدول "users" غير موجود في قاعدة البيانات.
+                                <br>الخطأ: ${usersError.message}
+                            </div>
+                            <div class="status-box loading">⏳ جاري محاولة قراءة جدول "matches"...</div>
+                        `;
+
+                        // محاولة قراءة جدول "matches"
+                        const { data: matchesData, error: matchesError } = await supabase
+                            .from('matches')
+                            .select('*')
+                            .limit(5);
+
+                        if (matchesError) {
+                            resultArea.innerHTML += `
+                                <div class="status-box error">
+                                    ❌ فشل قراءة جدول "matches" أيضاً.
+                                    <br>الخطأ: ${matchesError.message}
+                                </div>
+                                <div class="status-box error">
+                                    ❌ يبدو أن الجداول لم تنشأ بعد في قاعدة البيانات.
+                                    <br>⚠️ رجاءً أنشئ الجداول أولاً باستخدام SQL Editor في Supabase.
+                                </div>
+                            `;
+                        } else {
+                            // نجاح قراءة جدول "matches"
+                            displayData('matches', matchesData);
+                        }
+
+                    } else {
+                        // خطأ آخر غير متعلق بوجود الجدول
+                        resultArea.innerHTML += `
+                            <div class="status-box error">
+                                ❌ فشل الاتصال بقاعدة البيانات.
+                                <br>الخطأ: ${usersError.message}
+                            </div>
+                            <div class="status-box error">
+                                ⚠️ تأكد من:
+                                1. صحة الرابط (URL) والمفتاح (anon key).
+                                2. أن المشروع نشط على Supabase.
+                                3. أنك تستخدم المفتاح الصحيح (publishable key).
+                            </div>
+                        `;
+                    }
+
+                } else {
+                    // ✅ نجاح قراءة جدول "users"
+                    displayData('users', usersData);
+
+                    // محاولة قراءة جدول "matches" أيضاً لعرضه
+                    const { data: matchesData, error: matchesError } = await supabase
+                        .from('matches')
+                        .select('*')
+                        .limit(5);
+
+                    if (!matchesError && matchesData) {
+                        displayData('matches', matchesData);
+                    } else {
+                        resultArea.innerHTML += `
+                            <div class="status-box" style="border-right-color:#d29922;">
+                                ℹ️ لم يتم العثور على بيانات في جدول "matches" (قد يكون فارغاً).
+                            </div>
+                        `;
+                    }
+                }
+
+                // ==========================================
+                //  عرض معلومات إضافية عن المشروع
+                // ==========================================
+                resultArea.innerHTML += `
+                    <div class="status-box success" style="border-right-color: #58a6ff;">
+                        ✅ تم الاتصال بنجاح بخادم Supabase.
+                        <br>🔗 الرابط المستخدم: ${SUPABASE_URL}
+                        <br>📊 عدد الجداول التي تم التحقق منها: users, matches
+                    </div>
+                `;
+
+            } catch (err) {
+                // أي خطأ غير متوقع
+                resultArea.innerHTML += `
+                    <div class="status-box error">
+                        ❌ حدث خطأ غير متوقع:
+                        <br>${err.message}
+                    </div>
+                    <div class="status-box error">
+                        ⚠️ تأكد من أن الكود يعمل في بيئة آمنة (متصفح حديث) وأنك تستخدم الإنترنت.
+                    </div>
+                `;
+                console.error('خطأ غير متوقع:', err);
+            }
+
+            // إعادة تفعيل الزر
+            testBtn.disabled = false;
+            testBtn.textContent = '🔄 اختبر مجدداً';
+        }
+
+        // ==========================================
+        //  دالة عرض البيانات في جدول
+        // ==========================================
+        function displayData(tableName, data) {
+            if (!data || data.length === 0) {
+                resultArea.innerHTML += `
+                    <div class="status-box" style="border-right-color:#d29922;">
+                        📭 جدول "<strong>${tableName}</strong>" موجود لكنه فارغ (لا يحتوي على أي سجلات).
+                    </div>
+                `;
+                return;
+            }
+
+            // استخراج أسماء الأعمدة من أول عنصر
+            const columns = Object.keys(data[0]);
+
+            // بناء الجدول
+            let tableHTML = `
+                <div class="status-box success" style="border-right-color: #2ea043; overflow-x: auto;">
+                    <strong>✅ جدول "${tableName}" يحتوي على ${data.length} سجل(ات).</strong>
+                    <table>
+                        <thead>
+                            <tr>
+                                ${columns.map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(row => `
+                                <tr>
+                                    ${columns.map(col => `<td>${row[col] !== null && row[col] !== undefined ? row[col] : '—'}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            resultArea.innerHTML += tableHTML;
+        }
+
+        // ==========================================
+        //  ربط الزر بوظيفة الاختبار
+        // ==========================================
+        testBtn.addEventListener('click', runTest);
+
+        // ==========================================
+        //  تنفيذ اختبار تلقائي عند تحميل الصفحة (اختياري)
+        // ==========================================
+        // runTest(); // أزل التعليق عن هذا السطر إذا أردت أن يعمل الاختبار تلقائياً
+
+        console.log('✅ صفحة الاختبار جاهزة. اضغط على الزر لبدء الاختبار.');
+        console.log('📌 البيانات المستخدمة:');
+        console.log('URL:', SUPABASE_URL);
+        console.log('ANON KEY:', SUPABASE_ANON_KEY);
+    </script>
+
+</body>
+</html>
